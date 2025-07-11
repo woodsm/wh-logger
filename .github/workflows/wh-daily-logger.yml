@@ -1,4 +1,4 @@
-name: WH Daily Logger
+name: WH Daily Logger v2
 
 on:
   schedule:
