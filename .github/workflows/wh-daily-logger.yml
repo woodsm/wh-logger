@@ -1,0 +1,42 @@
+name: WH Daily Logger
+
+on:
+  schedule:
+    - cron: '1 0 * * *'  # Every day at 00:01 UTC
+  workflow_dispatch:
+
+jobs:
+  log-usage:
+    runs-on: ubuntu-latest
+    env:
+      PG_HOST: 127.0.0.1
+      PG_PORT: 5433
+      PG_DBNAME: ${{ secrets.WH_PG_DBNAME }}
+      PG_USER: ${{ secrets.WH_PG_USER }}
+      PG_PASSWORD: ${{ secrets.WH_PG_PASSWORD }}
+      PG_SSLMODE: require
+      REMOTE_DB_HOST: ${{ secrets.WH_REMOTE_DB_HOST }}
+      REMOTE_DB_PORT: 5432
+      SSH_TUNNEL_HOST: ${{ secrets.WH_SSH_TUNNEL_HOST }}
+      SSH_TUNNEL_PORT: 22
+      SSH_TUNNEL_USER: ${{ secrets.WH_SSH_TUNNEL_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.WH_SSH_PRIVATE_KEY }}
+      GOOGLE_SHEET_ID: ${{ secrets.WH_GOOGLE_SHEET_ID }}
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.WH_GOOGLE_SERVICE_ACCOUNT_JSON }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create Google creds file
+        run: echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > wh-logger-creds.json
+
+      - name: Run usage logger
+        run: python wh_log_daily_matrix.py
