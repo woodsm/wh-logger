@@ -2,6 +2,7 @@ import os
 import psycopg2
 import gspread
 import datetime
+import tempfile
 from dotenv import load_dotenv
 from sshtunnel import SSHTunnelForwarder
 from oauth2client.service_account import ServiceAccountCredentials
@@ -23,14 +24,19 @@ REMOTE_DB_PORT = int(os.getenv("REMOTE_DB_PORT"))
 SSH_TUNNEL_HOST = os.getenv("SSH_TUNNEL_HOST")
 SSH_TUNNEL_PORT = int(os.getenv("SSH_TUNNEL_PORT"))
 SSH_TUNNEL_USER = os.getenv("SSH_TUNNEL_USER")
-SSH_PRIVATE_KEY = os.getenv("SSH_PRIVATE_KEY").replace("\n", "\n").encode()
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 
+# Write SSH private key to temp file
+with tempfile.NamedTemporaryFile(delete=False, mode="w") as tmp_key:
+    tmp_key.write(os.getenv("SSH_PRIVATE_KEY").replace("\n", "\n").replace("\\n", "\n").encode().decode("unicode_escape"))
+    ssh_key_path = tmp_key.name
+
+# Create SSH tunnel
 with SSHTunnelForwarder(
     (SSH_TUNNEL_HOST, SSH_TUNNEL_PORT),
     ssh_username=SSH_TUNNEL_USER,
-    ssh_pkey=SSH_PRIVATE_KEY,
+    ssh_pkey=ssh_key_path,
     remote_bind_address=(REMOTE_DB_HOST, REMOTE_DB_PORT),
     local_bind_address=(PG_HOST, PG_PORT)
 ) as tunnel:
